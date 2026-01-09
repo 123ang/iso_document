@@ -68,7 +68,7 @@ sudo mysql -u root -p
 
 ```sql
 CREATE DATABASE iso_document_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'iso_user'@'localhost' IDENTIFIED BY 'your-strong-password-here';
+CREATE USER 'iso_user'@'localhost' IDENTIFIED BY '5792_Ang';
 GRANT ALL PRIVILEGES ON iso_document_system.* TO 'iso_user'@'localhost';
 FLUSH PRIVILEGES;
 EXIT;
@@ -78,8 +78,8 @@ EXIT;
 
 ```bash
 # Upload schema.sql and seed.sql to your server first
-mysql -u iso_user -p iso_document_system < /path/to/schema.sql
-mysql -u iso_user -p iso_document_system < /path/to/seed.sql
+mysql -u iso_user -p iso_document_system < schema.sql
+mysql -u iso_user -p iso_document_system < seed.sql
 ```
 
 ---
