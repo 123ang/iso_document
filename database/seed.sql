@@ -19,9 +19,9 @@ INSERT INTO users (name, email, password_hash, role, is_active) VALUES
 ('Demo User', 'demo@example.com', '$2b$10$vIxZY3i8KteKbl3AoSW1WObDkpCZmmdEyc4ecNjQIbOhRY1l5C.Je', 'user', 1);
 
 -- ============================================
--- Sample Groups
+-- Sample Access Groups
 -- ============================================
-INSERT INTO `groups` (name, description) VALUES
+INSERT INTO access_groups (name, description) VALUES
 ('Management', 'Senior management and executives'),
 ('Quality Assurance', 'Quality assurance and ISO compliance team'),
 ('All Staff', 'All company staff members'),
@@ -31,14 +31,14 @@ INSERT INTO `groups` (name, description) VALUES
 -- Assign Admin to All Groups (for testing)
 -- ============================================
 INSERT INTO user_groups (user_id, group_id)
-SELECT 1, id FROM `groups`;
+SELECT 1, id FROM access_groups;
 
 -- ============================================
 -- Assign Demo User to "All Staff" Group
 -- ============================================
 -- Demo user can view documents accessible to "All Staff" group
 INSERT INTO user_groups (user_id, group_id)
-SELECT 2, id FROM `groups` WHERE name = 'All Staff';
+SELECT 2, id FROM access_groups WHERE name = 'All Staff';
 
 -- ============================================
 -- Sample Document Sets

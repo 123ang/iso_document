@@ -9,7 +9,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { DocumentSet } from '../../document-sets/entities/document-set.entity';
 
-@Entity('groups')
+@Entity('access_groups')
 export class Group {
   @PrimaryGeneratedColumn('increment', { type: 'bigint' })
   id: number;

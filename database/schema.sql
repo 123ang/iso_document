@@ -8,7 +8,7 @@ DROP TABLE IF EXISTS documents;
 DROP TABLE IF EXISTS document_set_groups;
 DROP TABLE IF EXISTS document_sets;
 DROP TABLE IF EXISTS user_groups;
-DROP TABLE IF EXISTS groups;
+DROP TABLE IF EXISTS access_groups;
 DROP TABLE IF EXISTS users;
 
 -- ============================================
@@ -28,9 +28,9 @@ CREATE TABLE users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================
--- Groups Table
+-- Access Groups Table
 -- ============================================
-CREATE TABLE `groups` (
+CREATE TABLE access_groups (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
@@ -48,7 +48,7 @@ CREATE TABLE user_groups (
     assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, group_id),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES access_groups(id) ON DELETE CASCADE,
     INDEX idx_user (user_id),
     INDEX idx_group (group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -81,7 +81,7 @@ CREATE TABLE document_set_groups (
     assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (document_set_id, group_id),
     FOREIGN KEY (document_set_id) REFERENCES document_sets(id) ON DELETE CASCADE,
-    FOREIGN KEY (group_id) REFERENCES `groups`(id) ON DELETE CASCADE,
+    FOREIGN KEY (group_id) REFERENCES access_groups(id) ON DELETE CASCADE,
     INDEX idx_document_set (document_set_id),
     INDEX idx_group (group_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
