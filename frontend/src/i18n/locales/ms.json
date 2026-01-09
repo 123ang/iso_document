@@ -13,7 +13,10 @@
     "loginButton": "Log Masuk",
     "loggingIn": "Sedang log masuk...",
     "loginError": "Kelayakan tidak sah. Sila cuba lagi.",
-    "welcomeBack": "Selamat kembali"
+    "welcomeBack": "Selamat kembali",
+    "demoAccounts": "Akaun Demo:",
+    "adminAccount": "Pentadbir:",
+    "userAccount": "Pengguna:"
   },
   "nav": {
     "dashboard": "Papan Pemuka",
@@ -56,14 +59,19 @@
     "code": "Kod",
     "documentSet": "Set Dokumen",
     "currentVersion": "Versi Semasa",
+    "fileName": "Nama Fail",
     "modifiedDate": "Tarikh Ubahsuai",
     "modifiedBy": "Diubahsuai Oleh",
     "actions": "Tindakan",
     "noDocuments": "Tiada dokumen tersedia",
     "noVersion": "Tiada versi dimuat naik",
+    "noFile": "Tiada fail",
     "search": "Cari dokumen...",
     "searchPlaceholder": "Cari mengikut tajuk atau kod",
     "selectFile": "Pilih Fail",
+    "versionType": "Jenis Versi",
+    "majorVersion": "Versi Utama",
+    "minorVersion": "Versi Kecil",
     "versionNotes": "Nota Versi",
     "versionNotesPlaceholder": "Nota pilihan tentang versi ini...",
     "uploadFailed": "Muat naik gagal"
@@ -102,7 +110,10 @@
     "user": "Pengguna",
     "groups": "Kumpulan",
     "manageGroups": "Urus Kumpulan",
-    "noUsers": "Tiada pengguna dijumpai"
+    "searchGroupsPlaceholder": "Cari kumpulan mengikut nama atau penerangan...",
+    "searchPlaceholder": "Cari pengguna mengikut nama, e-mel, peranan, atau kumpulan...",
+    "noUsers": "Tiada pengguna dijumpai",
+    "noResults": "Tiada pengguna dijumpai yang sepadan dengan"
   },
   "groups": {
     "title": "Kumpulan",
@@ -112,7 +123,13 @@
     "name": "Nama",
     "description": "Penerangan",
     "members": "Ahli",
-    "noGroups": "Tiada kumpulan dijumpai"
+    "manageMembers": "Urus Ahli",
+    "selectMembers": "Pilih Ahli",
+    "selectMembersHelper": "Pilih pengguna yang sepatutnya menjadi ahli kumpulan ini",
+    "searchMembersPlaceholder": "Cari pengguna mengikut nama, e-mel, atau peranan...",
+    "searchPlaceholder": "Cari kumpulan mengikut nama atau penerangan...",
+    "noGroups": "Tiada kumpulan dijumpai",
+    "noResults": "Tiada kumpulan dijumpai yang sepadan dengan"
   },
   "audit": {
     "title": "Log Audit",

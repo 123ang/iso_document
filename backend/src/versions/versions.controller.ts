@@ -45,12 +45,28 @@ export class VersionsController {
   @ApiOperation({ summary: 'Upload a new document version (Admin only)' })
   async uploadVersion(
     @UploadedFile() file: Express.Multer.File,
-    @Body() createVersionDto: CreateVersionDto,
+    @Body() body: any,
     @Request() req,
   ) {
     if (!file) {
       throw new BadRequestException('No file uploaded');
     }
+
+    if (!body.documentId) {
+      throw new BadRequestException('documentId is required');
+    }
+
+    // Parse form data manually since it comes as strings
+    const documentId = parseInt(body.documentId, 10);
+    if (isNaN(documentId)) {
+      throw new BadRequestException('documentId must be a valid number');
+    }
+
+    const createVersionDto: CreateVersionDto = {
+      documentId: documentId,
+      changeNotes: body.changeNotes,
+      file: file,
+    };
 
     const version = await this.versionsService.create(createVersionDto, file, req.user.id);
     

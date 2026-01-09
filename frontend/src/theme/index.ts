@@ -12,7 +12,7 @@ export const uumColors = {
   black: '#000000',
   darkGray: '#333333',
   mediumGray: '#666666',
-  lightGray: '#F5F5F5',
+  lightGray: '#FFFFFF', // Changed from #F5F5F5 to white
   error: '#D32F2F',
   success: '#2E7D32',
   warning: '#ED6C02',
@@ -46,7 +46,7 @@ export const theme = createTheme({
       main: uumColors.info,
     },
     background: {
-      default: uumColors.lightGray,
+      default: uumColors.white,
       paper: uumColors.white,
     },
     text: {
@@ -124,7 +124,7 @@ export const theme = createTheme({
       styleOverrides: {
         paper: {
           backgroundColor: uumColors.white,
-          borderRight: `1px solid ${uumColors.lightGray}`,
+          borderRight: `1px solid ${uumColors.white}`,
         },
       },
     },

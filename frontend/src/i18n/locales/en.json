@@ -13,7 +13,10 @@
     "loginButton": "Sign In",
     "loggingIn": "Signing in...",
     "loginError": "Invalid credentials. Please try again.",
-    "welcomeBack": "Welcome back"
+    "welcomeBack": "Welcome back",
+    "demoAccounts": "Demo Accounts:",
+    "adminAccount": "Admin:",
+    "userAccount": "User:"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -56,14 +59,19 @@
     "code": "Code",
     "documentSet": "Document Set",
     "currentVersion": "Current Version",
+    "fileName": "File Name",
     "modifiedDate": "Modified Date",
     "modifiedBy": "Modified By",
     "actions": "Actions",
     "noDocuments": "No documents available",
     "noVersion": "No version uploaded",
+    "noFile": "No file",
     "search": "Search documents...",
     "searchPlaceholder": "Search by title or code",
     "selectFile": "Select File",
+    "versionType": "Version Type",
+    "majorVersion": "Major Version",
+    "minorVersion": "Minor Version",
     "versionNotes": "Version Notes",
     "versionNotesPlaceholder": "Optional notes about this version...",
     "uploadFailed": "Upload failed"
@@ -102,7 +110,10 @@
     "user": "User",
     "groups": "Groups",
     "manageGroups": "Manage Groups",
-    "noUsers": "No users found"
+    "searchGroupsPlaceholder": "Search groups by name or description...",
+    "searchPlaceholder": "Search users by name, email, role, or group...",
+    "noUsers": "No users found",
+    "noResults": "No users found matching"
   },
   "groups": {
     "title": "Groups",
@@ -112,7 +123,13 @@
     "name": "Name",
     "description": "Description",
     "members": "Members",
-    "noGroups": "No groups found"
+    "manageMembers": "Manage Members",
+    "selectMembers": "Select Members",
+    "selectMembersHelper": "Select users who should be members of this group",
+    "searchMembersPlaceholder": "Search users by name, email, or role...",
+    "searchPlaceholder": "Search groups by name or description...",
+    "noGroups": "No groups found",
+    "noResults": "No groups found matching"
   },
   "audit": {
     "title": "Audit Logs",

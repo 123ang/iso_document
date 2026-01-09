@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { DocumentVersion } from './entities/document-version.entity';
@@ -7,6 +7,7 @@ import { createReadStream, existsSync } from 'fs';
 import { join } from 'path';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+import { DocumentsService } from '../documents/documents.service';
 
 @Injectable()
 export class VersionsService {
@@ -14,6 +15,8 @@ export class VersionsService {
     @InjectRepository(DocumentVersion)
     private versionsRepository: Repository<DocumentVersion>,
     private configService: ConfigService,
+    @Inject(forwardRef(() => DocumentsService))
+    private documentsService: DocumentsService,
   ) {}
 
   async create(
@@ -24,7 +27,7 @@ export class VersionsService {
     // Calculate checksum
     const checksum = await this.calculateFileChecksum(file.path);
 
-    // Determine version number
+    // Determine version number - simple auto-increment: 1.0, 2.0, 3.0, etc.
     const latestVersion = await this.versionsRepository.findOne({
       where: { documentId: createVersionDto.documentId },
       order: { versionMajor: 'DESC', versionMinor: 'DESC' },
@@ -34,16 +37,12 @@ export class VersionsService {
     let versionMinor = 0;
 
     if (latestVersion) {
-      if (createVersionDto.versionType === 'major') {
-        versionMajor = latestVersion.versionMajor + 1;
-        versionMinor = 0;
-      } else {
-        versionMajor = latestVersion.versionMajor;
-        versionMinor = latestVersion.versionMinor + 1;
-      }
+      // Auto-increment: if latest is 1.0, next is 2.0; if 2.0, next is 3.0, etc.
+      versionMajor = latestVersion.versionMajor + 1;
+      versionMinor = 0;
     }
 
-    const versionLabel = `v${versionMajor}.${versionMinor}`;
+    const versionLabel = `${versionMajor}.${versionMinor}`;
 
     // If this is the first version, mark it as current
     const isFirstVersion = !latestVersion;
@@ -63,7 +62,13 @@ export class VersionsService {
       createdById: userId,
     });
 
-    return this.versionsRepository.save(version);
+    const savedVersion = await this.versionsRepository.save(version);
+
+    // Always set the new version as current and unset others
+    // This also updates the document's currentVersionId
+    await this.setAsCurrent(savedVersion.id);
+
+    return savedVersion;
   }
 
   async findAll(): Promise<DocumentVersion[]> {
@@ -105,7 +110,12 @@ export class VersionsService {
 
     // Mark this version as current
     version.isCurrent = true;
-    return this.versionsRepository.save(version);
+    const savedVersion = await this.versionsRepository.save(version);
+
+    // Update document's currentVersionId
+    await this.documentsService.setCurrentVersion(version.documentId, savedVersion.id);
+
+    return savedVersion;
   }
 
   async getFileStream(versionId: number) {

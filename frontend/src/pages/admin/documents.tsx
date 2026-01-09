@@ -161,6 +161,8 @@ export default function DocumentsAdminPage() {
 
   const handleOpenUploadDialog = (doc: any) => {
     setSelectedDocument(doc);
+    setUploadFile(null);
+    setVersionNotes('');
     setUploadDialogOpen(true);
   };
 
@@ -185,7 +187,7 @@ export default function DocumentsAdminPage() {
     formData.append('file', uploadFile);
     formData.append('documentId', selectedDocument.id.toString());
     if (versionNotes) {
-      formData.append('notes', versionNotes);
+      formData.append('changeNotes', versionNotes);
     }
 
     uploadMutation.mutate(formData);
@@ -232,6 +234,7 @@ export default function DocumentsAdminPage() {
                       <TableCell>{t('documents.code')}</TableCell>
                       <TableCell>{t('documents.documentSet')}</TableCell>
                       <TableCell>{t('documents.currentVersion')}</TableCell>
+                      <TableCell>{t('documents.fileName')}</TableCell>
                       <TableCell align="right">{t('documents.actions')}</TableCell>
                     </TableRow>
                   </TableHead>
@@ -249,15 +252,26 @@ export default function DocumentsAdminPage() {
                           {doc.currentVersion ? (
                             <Box>
                               <Typography variant="body2">
-                                v{doc.currentVersion.versionNumber}
+                                {doc.currentVersion.versionLabel || `${doc.currentVersion.versionMajor}.${doc.currentVersion.versionMinor}`}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                {new Date(doc.currentVersion.uploadedAt).toLocaleDateString()}
+                                {new Date(doc.currentVersion.createdAt).toLocaleDateString()}
                               </Typography>
                             </Box>
                           ) : (
                             <Typography variant="body2" color="text.secondary">
                               {t('documents.noVersion')}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {doc.currentVersion ? (
+                            <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                              {doc.currentVersion.originalFilename || '-'}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {t('documents.noFile')}
                             </Typography>
                           )}
                         </TableCell>

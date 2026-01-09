@@ -128,9 +128,17 @@ export default function LoginPage() {
             </form>
 
             <Box sx={{ mt: 3, textAlign: 'center' }}>
-              <Typography variant="caption" color="text.secondary">
-                Default: admin@example.com / Admin@123
-              </Typography>
+              <Box sx={{ mb: 2, p: 2, bgcolor: 'rgba(0, 51, 102, 0.05)', borderRadius: 2 }}>
+                <Typography variant="caption" fontWeight="bold" color="primary" display="block" sx={{ mb: 1 }}>
+                  {t('auth.demoAccounts')}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block">
+                  <strong>{t('auth.adminAccount')}</strong> admin@example.com / Admin@123
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5 }}>
+                  <strong>{t('auth.userAccount')}</strong> demo@example.com / Demo@123
+                </Typography>
+              </Box>
             </Box>
           </CardContent>
         </Card>

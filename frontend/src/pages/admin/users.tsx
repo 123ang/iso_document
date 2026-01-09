@@ -27,12 +27,14 @@ import {
   Chip,
   Switch,
   FormControlLabel,
+  Tooltip,
 } from '@mui/material';
 import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Group as GroupIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuthStore } from '@/store/authStore';
@@ -58,6 +60,8 @@ export default function UsersAdminPage() {
   });
 
   const [selectedGroups, setSelectedGroups] = useState<number[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [groupSearchQuery, setGroupSearchQuery] = useState('');
 
   const { data: users, isLoading } = useQuery('users', () =>
     usersAPI.getAll().then((res) => res.data)
@@ -166,6 +170,7 @@ export default function UsersAdminPage() {
   const handleOpenGroupDialog = (usr: any) => {
     setSelectedUser(usr);
     setSelectedGroups(usr.groups?.map((g: any) => g.id) || []);
+    setGroupSearchQuery(''); // Reset search when opening dialog
     setGroupDialogOpen(true);
   };
 
@@ -191,7 +196,9 @@ export default function UsersAdminPage() {
 
   const handleAssignGroups = () => {
     if (selectedUser) {
-      assignGroupsMutation.mutate({ userId: selectedUser.id, groupIds: selectedGroups });
+      // Ensure groupIds are numbers
+      const groupIds = selectedGroups.map(id => typeof id === 'string' ? parseInt(id, 10) : id);
+      assignGroupsMutation.mutate({ userId: selectedUser.id, groupIds });
     }
   };
 
@@ -204,6 +211,18 @@ export default function UsersAdminPage() {
   if (!isAuthenticated || user?.role !== 'admin') {
     return null;
   }
+
+  // Filter users based on search query
+  const filteredUsers = users?.filter((usr: any) => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      usr.name?.toLowerCase().includes(query) ||
+      usr.email?.toLowerCase().includes(query) ||
+      usr.role?.toLowerCase().includes(query) ||
+      usr.groups?.some((g: any) => g.name?.toLowerCase().includes(query))
+    );
+  }) || [];
 
   return (
     <MainLayout>
@@ -221,13 +240,29 @@ export default function UsersAdminPage() {
           </Button>
         </Box>
 
+        {/* Search Bar */}
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <TextField
+              fullWidth
+              placeholder={t('users.searchPlaceholder')}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              InputProps={{
+                startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+              size="small"
+            />
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent>
             {isLoading ? (
               <Box display="flex" justifyContent="center" p={4}>
                 <CircularProgress />
               </Box>
-            ) : users && users.length > 0 ? (
+            ) : filteredUsers.length > 0 ? (
               <TableContainer>
                 <Table>
                   <TableHead>
@@ -241,7 +276,7 @@ export default function UsersAdminPage() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {users.map((usr: any) => (
+                    {filteredUsers.map((usr: any) => (
                       <TableRow key={usr.id} hover>
                         <TableCell>
                           <Typography fontWeight="medium">{usr.name}</Typography>
@@ -269,13 +304,6 @@ export default function UsersAdminPage() {
                                 +{usr.groups.length - 2}
                               </Typography>
                             )}
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenGroupDialog(usr)}
-                              title={t('users.manageGroups')}
-                            >
-                              <GroupIcon fontSize="small" />
-                            </IconButton>
                           </Box>
                         </TableCell>
                         <TableCell>
@@ -286,27 +314,51 @@ export default function UsersAdminPage() {
                           />
                         </TableCell>
                         <TableCell align="right">
-                          <IconButton
-                            size="small"
-                            color="primary"
-                            onClick={() => handleOpenDialog(usr)}
-                          >
-                            <EditIcon />
-                          </IconButton>
-                          <IconButton
-                            size="small"
-                            color="error"
-                            onClick={() => handleDelete(usr.id)}
-                            disabled={usr.id === user?.id}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                          <Tooltip title={t('users.manageGroups')} arrow>
+                            <IconButton
+                              size="small"
+                              color="info"
+                              onClick={() => handleOpenGroupDialog(usr)}
+                              sx={{
+                                '&:hover': {
+                                  backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                                }
+                              }}
+                            >
+                              <GroupIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t('users.edit')} arrow>
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={() => handleOpenDialog(usr)}
+                            >
+                              <EditIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={t('users.delete')} arrow>
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => handleDelete(usr.id)}
+                                disabled={usr.id === user?.id}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
+            ) : searchQuery ? (
+              <Alert severity="info">
+                {t('users.noResults')} "{searchQuery}"
+              </Alert>
             ) : (
               <Alert severity="info">{t('users.noUsers')}</Alert>
             )}
@@ -389,13 +441,31 @@ export default function UsersAdminPage() {
             {t('users.manageGroups')} - {selectedUser?.name}
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ pt: 2 }}>
+            <Box sx={{ pt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Search Bar */}
+              <TextField
+                fullWidth
+                placeholder={t('users.searchGroupsPlaceholder')}
+                value={groupSearchQuery}
+                onChange={(e) => setGroupSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
+                }}
+                size="small"
+              />
               <TextField
                 fullWidth
                 select
                 label={t('users.groups')}
                 value={selectedGroups}
-                onChange={(e) => setSelectedGroups(e.target.value as any)}
+                onChange={(e) => {
+                  const value = e.target.value as any;
+                  // Ensure values are numbers
+                  const numericValues = Array.isArray(value) 
+                    ? value.map(v => typeof v === 'string' ? parseInt(v, 10) : v)
+                    : [];
+                  setSelectedGroups(numericValues);
+                }}
                 SelectProps={{
                   multiple: true,
                   renderValue: (selected: any) =>
@@ -405,11 +475,25 @@ export default function UsersAdminPage() {
                       .join(', '),
                 }}
               >
-                {groups?.map((group: any) => (
-                  <MenuItem key={group.id} value={group.id}>
-                    {group.name}
-                  </MenuItem>
-                ))}
+                {groups
+                  ?.filter((group: any) => {
+                    if (!groupSearchQuery.trim()) return true;
+                    const query = groupSearchQuery.toLowerCase();
+                    return (
+                      group.name?.toLowerCase().includes(query) ||
+                      group.description?.toLowerCase().includes(query)
+                    );
+                  })
+                  .map((group: any) => (
+                    <MenuItem key={group.id} value={group.id}>
+                      {group.name}
+                      {group.description && (
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                          - {group.description}
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  ))}
               </TextField>
             </Box>
           </DialogContent>

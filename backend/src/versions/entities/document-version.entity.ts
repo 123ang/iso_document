@@ -30,6 +30,11 @@ export class DocumentVersion {
   @Column({ name: 'version_label', length: 10 })
   versionLabel: string;
 
+  // Computed property for version number (e.g., 1.0, 2.0, 3.0)
+  get versionNumber(): number {
+    return parseFloat(`${this.versionMajor}.${this.versionMinor}`);
+  }
+
   @Column({ name: 'change_notes', type: 'text', nullable: true })
   changeNotes: string;
 

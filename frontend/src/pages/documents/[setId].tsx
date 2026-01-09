@@ -33,7 +33,6 @@ import {
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuthStore } from '@/store/authStore';
 import { documentSetsAPI, documentsAPI, versionsAPI } from '@/lib/api';
-import { format } from 'date-fns';
 
 export default function DocumentsPage() {
   const { t } = useTranslation();
@@ -142,6 +141,7 @@ export default function DocumentsPage() {
                       <TableCell>{t('documents.documentName')}</TableCell>
                       <TableCell>{t('documents.documentCode')}</TableCell>
                       <TableCell>{t('documents.currentVersion')}</TableCell>
+                      <TableCell>{t('documents.fileName')}</TableCell>
                       <TableCell>{t('documents.modifiedDate')}</TableCell>
                       <TableCell align="right">{t('documents.actions')}</TableCell>
                     </TableRow>
@@ -167,8 +167,25 @@ export default function DocumentsPage() {
                           )}
                         </TableCell>
                         <TableCell>
+                          {doc.currentVersion ? (
+                            <Typography variant="body2" noWrap sx={{ maxWidth: 300 }}>
+                              {doc.currentVersion.originalFilename || '-'}
+                            </Typography>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              {t('documents.noFile')}
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {doc.updatedAt &&
-                            format(new Date(doc.updatedAt), 'dd MMM yyyy, HH:mm')}
+                            new Date(doc.updatedAt).toLocaleString('en-GB', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                         </TableCell>
                         <TableCell align="right">
                           {doc.currentVersion && (

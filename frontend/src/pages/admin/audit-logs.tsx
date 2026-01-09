@@ -100,7 +100,7 @@ function AuditLogRow({ log }: { log: any }) {
               <Typography variant="subtitle2" gutterBottom>
                 Details
               </Typography>
-              <Box sx={{ p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
+              <Box sx={{ p: 2, bgcolor: 'white', borderRadius: 1, border: '1px solid rgba(0, 0, 0, 0.1)' }}>
                 <pre style={{ margin: 0, fontSize: '0.875rem', whiteSpace: 'pre-wrap' }}>
                   {JSON.stringify(log.details, null, 2)}
                 </pre>

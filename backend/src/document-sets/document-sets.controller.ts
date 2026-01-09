@@ -59,8 +59,14 @@ export class DocumentSetsController {
   @ApiOperation({ summary: 'Get document sets accessible by current user' })
   async getMyDocumentSets(@Request() req) {
     const user = req.user;
-    const groupIds = user.groups?.map(g => g.id) || [];
     
+    // Admin users see all document sets
+    if (user.role === 'admin') {
+      return this.documentSetsService.findAll();
+    }
+    
+    // Regular users see only document sets assigned to their groups
+    const groupIds = user.groups?.map(g => g.id) || [];
     return this.documentSetsService.findByUserGroups(groupIds);
   }
 

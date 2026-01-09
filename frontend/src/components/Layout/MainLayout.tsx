@@ -1,6 +1,7 @@
 import { useState, ReactNode } from 'react';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from 'react-query';
 import {
   Box,
   AppBar,
@@ -17,6 +18,7 @@ import {
   Divider,
   Avatar,
   Select,
+  Collapse,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -29,9 +31,12 @@ import {
   AccountCircle as AccountIcon,
   Logout as LogoutIcon,
   Language as LanguageIcon,
+  ExpandLess,
+  ExpandMore,
 } from '@mui/icons-material';
 import { useAuthStore } from '@/store/authStore';
 import { uumColors } from '@/theme';
+import { documentSetsAPI } from '@/lib/api';
 
 const DRAWER_WIDTH = 260;
 
@@ -45,8 +50,16 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const { user, logout } = useAuthStore();
   const [drawerOpen, setDrawerOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [documentSetsOpen, setDocumentSetsOpen] = useState(true);
 
   const isAdmin = user?.role === 'admin';
+
+  // Fetch document sets for sidebar
+  const { data: documentSets } = useQuery(
+    'myDocumentSets',
+    () => documentSetsAPI.getMy().then((res) => res.data),
+    { enabled: !!user }
+  );
 
   const menuItems = [
     { key: 'dashboard', label: t('nav.dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
@@ -96,7 +109,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <MenuIcon />
           </IconButton>
 
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 'bold', color: 'white' }}>
             {t('app.title')}
           </Typography>
 
@@ -173,6 +186,40 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 <ListItemText primary={item.label} />
               </ListItemButton>
             ))}
+
+            {/* Document Sets in Sidebar */}
+            {documentSets && documentSets.length > 0 && (
+              <>
+                <Divider sx={{ my: 1 }} />
+                <ListItemButton onClick={() => setDocumentSetsOpen(!documentSetsOpen)}>
+                  <ListItemIcon>
+                    <FolderIcon />
+                  </ListItemIcon>
+                  <ListItemText primary={t('nav.documentSets')} />
+                  {documentSetsOpen ? <ExpandLess /> : <ExpandMore />}
+                </ListItemButton>
+                <Collapse in={documentSetsOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    {documentSets.map((set: any) => (
+                      <ListItemButton
+                        key={set.id}
+                        selected={router.pathname === `/documents/${set.id}`}
+                        onClick={() => router.push(`/documents/${set.id}`)}
+                        sx={{ pl: 4, mb: 0.5 }}
+                      >
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <FolderIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText 
+                          primary={set.title}
+                          primaryTypographyProps={{ variant: 'body2' }}
+                        />
+                      </ListItemButton>
+                    ))}
+                  </List>
+                </Collapse>
+              </>
+            )}
           </List>
 
           {isAdmin && (

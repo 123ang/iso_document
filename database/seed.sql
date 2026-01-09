@@ -10,6 +10,15 @@ INSERT INTO users (name, email, password_hash, role) VALUES
 ('System Administrator', 'admin@example.com', '$2b$10$X5x7.BXD7MHvHZK3t7p4EO3LH9v7lJK4h2LmH5xQqR3K4x5C6v7Ty', 'admin');
 
 -- ============================================
+-- Demo User Account (View/Download Only)
+-- ============================================
+-- Password: Demo@123
+-- Note: This is a bcrypt hash with 10 rounds
+-- Role: user (view and download only, no admin access)
+INSERT INTO users (name, email, password_hash, role, is_active) VALUES
+('Demo User', 'demo@example.com', '$2b$10$vIxZY3i8KteKbl3AoSW1WObDkpCZmmdEyc4ecNjQIbOhRY1l5C.Je', 'user', 1);
+
+-- ============================================
 -- Sample Groups
 -- ============================================
 INSERT INTO `groups` (name, description) VALUES
@@ -23,6 +32,13 @@ INSERT INTO `groups` (name, description) VALUES
 -- ============================================
 INSERT INTO user_groups (user_id, group_id)
 SELECT 1, id FROM `groups`;
+
+-- ============================================
+-- Assign Demo User to "All Staff" Group
+-- ============================================
+-- Demo user can view documents accessible to "All Staff" group
+INSERT INTO user_groups (user_id, group_id)
+SELECT 2, id FROM `groups` WHERE name = 'All Staff';
 
 -- ============================================
 -- Sample Document Sets
