@@ -11,6 +11,15 @@ Complete guide for deploying the ISO Document Management System on a VPS server.
 - **SSH Access** to your VPS
 - **Root or sudo access**
 
+## 🚀 Quick Start (Files Already at /root/projects/iso_document)
+
+If you've already pulled your files to `/root/projects/iso_document`, you can skip Step 5 and jump directly to:
+- **Step 6:** Configure Backend (create `.env` file)
+- **Step 7:** Configure Frontend (create `.env.local` file)
+- **Step 8:** Setup PM2
+
+**Important:** Make sure you've already imported the database schema (Step 2.4) which now uses `access_groups` instead of the reserved keyword `groups`.
+
 ---
 
 ## 🛠️ Step 1: Server Initial Setup
@@ -77,10 +86,17 @@ EXIT;
 ### 2.4 Import Database Schema
 
 ```bash
-# Upload schema.sql and seed.sql to your server first
+# Navigate to the database directory
+cd /root/projects/iso_document/database
+
+# Import schema (uses 'access_groups' table instead of reserved keyword 'groups')
 mysql -u iso_user -p iso_document_system < schema.sql
+
+# Import seed data (includes admin@example.com and demo@example.com users)
 mysql -u iso_user -p iso_document_system < seed.sql
 ```
+
+**Note:** The schema uses `access_groups` table name to avoid MySQL reserved keyword conflicts. All code has been updated to use this table name automatically via TypeORM.
 
 ---
 
@@ -130,32 +146,34 @@ sudo systemctl enable nginx
 ### 5.1 Create Application Directory
 
 ```bash
-sudo mkdir -p /var/www/iso-document
-sudo chown -R $USER:$USER /var/www/iso-document
+mkdir -p /root/projects/iso_document
+cd /root/projects/iso_document
 ```
+
+**Note:** If you've already pulled your files here via Git/SCP, skip to Step 5.3.
 
 ### 5.2 Upload Your Project
 
 **Option A: Using Git (Recommended)**
 
 ```bash
-cd /var/www/iso-document
-git clone <your-repo-url> .
-# or upload files via SCP/SFTP
+cd /root/projects
+git clone <your-repo-url> iso_document
+# or if you already cloned, navigate to it
+cd iso_document
 ```
 
 **Option B: Using SCP (from your local machine)**
 
 ```bash
 # From your local machine
-scp -r iso_document/* user@your-vps-ip:/var/www/iso-document/
+scp -r iso_document/* root@your-vps-ip:/root/projects/iso_document/
 ```
 
 ### 5.3 Set Permissions
 
 ```bash
-cd /var/www/iso-document
-sudo chown -R $USER:$USER .
+cd /root/projects/iso_document
 chmod -R 755 .
 ```
 
@@ -166,14 +184,15 @@ chmod -R 755 .
 ### 6.1 Install Backend Dependencies
 
 ```bash
-cd /var/www/iso-document/backend
+cd /root/projects/iso_document/backend
 npm install --production
 ```
 
 ### 6.2 Create Production .env File
 
 ```bash
-nano backend/.env
+cd /root/projects/iso_document/backend
+nano .env
 ```
 
 **Paste this configuration:**
@@ -198,7 +217,7 @@ JWT_SECRET=generate-a-very-long-random-string-here-minimum-32-characters
 JWT_EXPIRES_IN=24h
 
 # File Storage Configuration
-STORAGE_PATH=/var/www/iso-document/storage
+STORAGE_PATH=/root/projects/iso_document/storage
 MAX_FILE_SIZE=1073741824
 
 # CORS Configuration
@@ -216,15 +235,15 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### 6.3 Build Backend
 
 ```bash
-cd /var/www/iso-document/backend
+cd /root/projects/iso_document/backend
 npm run build
 ```
 
 ### 6.4 Create Storage Directory
 
 ```bash
-mkdir -p /var/www/iso-document/storage
-chmod 755 /var/www/iso-document/storage
+mkdir -p /root/projects/iso_document/storage
+chmod 755 /root/projects/iso_document/storage
 ```
 
 ---
@@ -234,14 +253,15 @@ chmod 755 /var/www/iso-document/storage
 ### 7.1 Install Frontend Dependencies
 
 ```bash
-cd /var/www/iso-document/frontend
+cd /root/projects/iso_document/frontend
 npm install --production
 ```
 
 ### 7.2 Create Production .env.local File
 
 ```bash
-nano frontend/.env.local
+cd /root/projects/iso_document/frontend
+nano .env.local
 ```
 
 **Paste this:**
@@ -253,7 +273,7 @@ NEXT_PUBLIC_API_URL=https://iso.taskinsight.my/api
 ### 7.3 Build Frontend
 
 ```bash
-cd /var/www/iso-document/frontend
+cd /root/projects/iso_document/frontend
 npm run build
 ```
 
@@ -264,7 +284,7 @@ npm run build
 ### 8.1 Create PM2 Ecosystem File
 
 ```bash
-cd /var/www/iso-document
+cd /root/projects/iso_document
 nano ecosystem.config.js
 ```
 
@@ -276,7 +296,7 @@ module.exports = {
     {
       name: 'iso-backend',
       script: './backend/dist/main.js',
-      cwd: '/var/www/iso-document',
+      cwd: '/root/projects/iso_document',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -298,13 +318,13 @@ module.exports = {
 ### 8.2 Create Logs Directory
 
 ```bash
-mkdir -p /var/www/iso-document/logs
+mkdir -p /root/projects/iso_document/logs
 ```
 
 ### 8.3 Start Backend with PM2
 
 ```bash
-cd /var/www/iso-document
+cd /root/projects/iso_document
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup
@@ -416,7 +436,8 @@ sudo certbot renew --dry-run
 ### 11.1 Update PM2 Config
 
 ```bash
-nano /var/www/iso-document/ecosystem.config.js
+cd /root/projects/iso_document
+nano ecosystem.config.js
 ```
 
 **Update to include frontend:**
@@ -427,7 +448,7 @@ module.exports = {
     {
       name: 'iso-backend',
       script: './backend/dist/main.js',
-      cwd: '/var/www/iso-document',
+      cwd: '/root/projects/iso_document',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -446,7 +467,7 @@ module.exports = {
       name: 'iso-frontend',
       script: 'npm',
       args: 'start',
-      cwd: '/var/www/iso-document/frontend',
+      cwd: '/root/projects/iso_document/frontend',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -468,7 +489,7 @@ module.exports = {
 ### 11.2 Restart PM2
 
 ```bash
-cd /var/www/iso-document
+cd /root/projects/iso_document
 pm2 delete all
 pm2 start ecosystem.config.js
 pm2 save
@@ -566,7 +587,7 @@ sudo systemctl restart mysql
 ### 14.3 Set Proper File Permissions
 
 ```bash
-cd /var/www/iso-document
+cd /root/projects/iso_document
 chmod 600 backend/.env
 chmod 600 frontend/.env.local
 chmod 755 storage
@@ -595,14 +616,15 @@ pm2 restart all
 ### 15.2 Database Backup Script
 
 ```bash
-nano /var/www/iso-document/backup-db.sh
+cd /root/projects/iso_document
+nano backup-db.sh
 ```
 
 **Paste:**
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/var/www/iso-document/backups"
+BACKUP_DIR="/root/projects/iso_document/backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 mkdir -p $BACKUP_DIR
 mysqldump -u iso_user -p'your-password' iso_document_system > $BACKUP_DIR/db_backup_$DATE.sql
@@ -611,14 +633,14 @@ find $BACKUP_DIR -name "db_backup_*.sql" -mtime +7 -delete
 ```
 
 ```bash
-chmod +x /var/www/iso-document/backup-db.sh
+chmod +x /root/projects/iso_document/backup-db.sh
 ```
 
 **Add to crontab (daily backup at 2 AM):**
 ```bash
 crontab -e
 # Add this line:
-0 2 * * * /var/www/iso-document/backup-db.sh
+0 2 * * * /root/projects/iso_document/backup-db.sh
 ```
 
 ---
@@ -628,7 +650,7 @@ crontab -e
 ### 16.1 Update Process
 
 ```bash
-cd /var/www/iso-document
+cd /root/projects/iso_document
 
 # Pull latest changes (if using Git)
 git pull
@@ -644,6 +666,7 @@ npm install --production
 npm run build
 
 # Restart services
+cd ..
 pm2 restart all
 ```
 
