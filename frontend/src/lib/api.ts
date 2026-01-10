@@ -73,10 +73,58 @@ export const versionsAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   setAsCurrent: (id: number) => api.post(`/versions/${id}/set-current`),
-  download: (id: number) => {
-    window.open(`${api.defaults.baseURL}/versions/${id}/download`, '_blank');
+  download: async (id: number) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${api.defaults.baseURL}/versions/${id}/download`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob',
+      });
+
+      // Get filename from Content-Disposition header
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `document-${id}.pdf`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Create blob URL and trigger download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      throw error;
+    }
   },
-  getViewUrl: (id: number) => `${api.defaults.baseURL}/versions/${id}/view`,
+  getViewUrl: async (id: number): Promise<string> => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${api.defaults.baseURL}/versions/${id}/view`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        responseType: 'blob',
+      });
+
+      // Create blob URL for viewing
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      return window.URL.createObjectURL(blob);
+    } catch (error) {
+      console.error('View error:', error);
+      throw error;
+    }
+  },
 };
 
 export const usersAPI = {

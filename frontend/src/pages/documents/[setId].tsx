@@ -42,6 +42,7 @@ export default function DocumentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(false);
 
   const { data: documentSet, isLoading: loadingSet } = useQuery(
     ['documentSet', setId],
@@ -66,14 +67,38 @@ export default function DocumentsPage() {
     doc.docCode?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleView = (versionId: number) => {
-    const url = versionsAPI.getViewUrl(versionId);
-    setPreviewUrl(url);
-    setPreviewOpen(true);
+  const handleView = async (versionId: number) => {
+    try {
+      setLoadingPreview(true);
+      const url = await versionsAPI.getViewUrl(versionId);
+      setPreviewUrl(url);
+      setPreviewOpen(true);
+    } catch (error: any) {
+      console.error('View error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load document preview';
+      alert(errorMessage);
+      setPreviewUrl(null);
+    } finally {
+      setLoadingPreview(false);
+    }
   };
 
-  const handleDownload = (versionId: number) => {
-    versionsAPI.download(versionId);
+  const handleClosePreview = () => {
+    // Clean up blob URL to free memory
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      window.URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    setPreviewOpen(false);
+  };
+
+  const handleDownload = async (versionId: number) => {
+    try {
+      await versionsAPI.download(versionId);
+    } catch (error: any) {
+      console.error('Download error:', error);
+      alert(error.response?.data?.message || 'Failed to download document');
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -223,18 +248,22 @@ export default function DocumentsPage() {
         {/* Preview Dialog */}
         <Dialog
           open={previewOpen}
-          onClose={() => setPreviewOpen(false)}
+          onClose={handleClosePreview}
           maxWidth="lg"
           fullWidth
         >
           <DialogTitle>
             <Box display="flex" justifyContent="space-between" alignItems="center">
               <Typography variant="h6">{t('documents.view')}</Typography>
-              <Button onClick={() => setPreviewOpen(false)}>{t('common.close')}</Button>
+              <Button onClick={handleClosePreview}>{t('common.close')}</Button>
             </Box>
           </DialogTitle>
           <DialogContent>
-            {previewUrl && (
+            {loadingPreview ? (
+              <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+                <CircularProgress />
+              </Box>
+            ) : previewUrl ? (
               <iframe
                 src={previewUrl}
                 style={{
@@ -243,8 +272,12 @@ export default function DocumentsPage() {
                   border: 'none',
                 }}
                 title="Document Preview"
+                onError={() => {
+                  alert('Failed to load document preview');
+                  handleClosePreview();
+                }}
               />
-            )}
+            ) : null}
           </DialogContent>
         </Dialog>
       </Box>
