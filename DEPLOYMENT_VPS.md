@@ -1565,4 +1565,41 @@ If you encounter issues:
 
 ---
 
+---
+
+## 🔐 Fix Login Password Issues
+
+### If you get "INVALID credentials" when trying to login:
+
+**Quick Fix - Run the password fix script:**
+
+```bash
+cd /root/projects/iso_document
+
+# Option 1: Using the Node.js script directly
+cd backend
+node fix-admin-password.js
+
+# Option 2: Using the bash script
+bash fix-passwords.sh
+```
+
+**What the script does:**
+- ✅ Generates correct bcrypt hashes for "Admin@123" and "Demo@123"
+- ✅ Updates or creates admin and demo users in the database
+- ✅ Verifies password hashes are correct
+- ✅ Ensures users are active
+
+**After running the script, login with:**
+- **Admin:** `admin@example.com` / `Admin@123`
+- **Demo:** `demo@example.com` / `Demo@123`
+
+**If the script fails:**
+1. Check database credentials in `backend/.env`
+2. Verify database is running: `sudo systemctl status mysql`
+3. Test database connection: `mysql -u iso_user -p iso_document_system`
+4. Check script logs for specific error messages
+
+---
+
 **Happy Deployment! 🚀**

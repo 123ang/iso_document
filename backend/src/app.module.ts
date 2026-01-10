@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import * as path from 'path';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { GroupsModule } from './groups/groups.module';
@@ -20,7 +21,13 @@ import { AuditLog } from './audit/entities/audit-log.entity';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      // Check multiple locations for .env file (development and production)
+      envFilePath: [
+        path.join(process.cwd(), 'backend', '.env'),  // From project root
+        path.join(process.cwd(), '.env'),              // From project root (if moved)
+        path.join(__dirname, '..', '.env'),            // Relative to compiled dist
+        '.env',                                         // Current directory
+      ],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
