@@ -3,7 +3,7 @@ module.exports = {
     {
       name: 'iso-backend',
       script: './backend/dist/main.js',
-      cwd: '/var/www/iso-document',
+      cwd: '/root/projects/iso_document',
       instances: 1,
       exec_mode: 'fork',
       env: {
@@ -22,7 +22,7 @@ module.exports = {
       name: 'iso-frontend',
       script: 'npm',
       args: 'start',
-      cwd: '/var/www/iso-document/frontend',
+      cwd: '/root/projects/iso_document/frontend',
       instances: 1,
       exec_mode: 'fork',
       env: {

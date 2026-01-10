@@ -15,7 +15,7 @@ Complete guide for deploying the ISO Document Management System on a VPS server.
 
 If you've already pulled your files to `/root/projects/iso_document`, you can skip Step 5 and jump directly to:
 - **Step 6:** Configure Backend (create `.env` file)
-- **Step 7:** Configure Frontend (create `.env.local` file)
+- **Step 7:** Configure Frontend (create `.env` file)
 - **Step 8:** Setup PM2
 
 **Important:** Make sure you've already imported the database schema (Step 2.4) which now uses `access_groups` instead of the reserved keyword `groups`.
@@ -185,7 +185,8 @@ chmod -R 755 .
 
 ```bash
 cd /root/projects/iso_document/backend
-npm install --production
+# Install ALL dependencies (including dev dependencies needed for building)
+npm install
 ```
 
 ### 6.2 Create Production .env File
@@ -254,14 +255,15 @@ chmod 755 /root/projects/iso_document/storage
 
 ```bash
 cd /root/projects/iso_document/frontend
-npm install --production
+# Install ALL dependencies (including dev dependencies needed for building)
+npm install
 ```
 
-### 7.2 Create Production .env.local File
+### 7.2 Create Production .env File
 
 ```bash
 cd /root/projects/iso_document/frontend
-nano .env.local
+nano .env
 ```
 
 **Paste this:**
@@ -269,6 +271,8 @@ nano .env.local
 ```env
 NEXT_PUBLIC_API_URL=https://iso.taskinsight.my/api
 ```
+
+**Note:** You can also use `.env.local` if you prefer - Next.js supports both. `.env.local` takes precedence over `.env` if both exist.
 
 ### 7.3 Build Frontend
 
@@ -285,7 +289,7 @@ npm run build
 
 ```bash
 cd /root/projects/iso_document
-nano ecosystem.config.js
+
 ```
 
 **Paste this:**
@@ -589,7 +593,7 @@ sudo systemctl restart mysql
 ```bash
 cd /root/projects/iso_document
 chmod 600 backend/.env
-chmod 600 frontend/.env.local
+chmod 600 frontend/.env
 chmod 755 storage
 ```
 
@@ -657,12 +661,12 @@ git pull
 
 # Update backend
 cd backend
-npm install --production
+npm install  # Install all dependencies (needed for build)
 npm run build
 
 # Update frontend
 cd ../frontend
-npm install --production
+npm install  # Install all dependencies (needed for build)
 npm run build
 
 # Restart services
@@ -778,7 +782,7 @@ sudo tail -f /var/log/nginx/error.log
 - [ ] Nginx installed
 - [ ] Application files uploaded
 - [ ] Backend .env configured
-- [ ] Frontend .env.local configured
+- [ ] Frontend .env configured
 - [ ] Backend built and running
 - [ ] Frontend built and running
 - [ ] Nginx configured
