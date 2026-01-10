@@ -350,7 +350,8 @@ sudo nano /etc/nginx/sites-available/iso.taskinsight.my
 
 ```nginx
 # Backend API - Proxy to Node.js
-upstream backend {
+# Using unique upstream name to avoid conflicts with other sites
+upstream iso_backend {
     server localhost:4007;
     keepalive 64;
 }
@@ -375,7 +376,7 @@ server {
 
     # Backend API
     location /api {
-        proxy_pass http://backend;
+        proxy_pass http://iso_backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -678,6 +679,190 @@ pm2 restart all
 
 ## 🐛 Troubleshooting
 
+### 502 Bad Gateway Error
+
+This error means Nginx cannot connect to your backend/frontend services. Follow these steps:
+
+#### Step 1: Check if PM2 Services are Running
+
+```bash
+pm2 status
+```
+
+**Expected output:** Both `iso-backend` and `iso-frontend` should show status `online`
+
+**If services are stopped or errored:**
+```bash
+# Check logs for errors
+pm2 logs iso-backend --lines 50
+pm2 logs iso-frontend --lines 50
+
+# Restart services
+pm2 restart all
+
+# If still not working, delete and restart
+pm2 delete all
+cd /root/projects/iso_document
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+#### Step 2: Verify Ports are Listening
+
+```bash
+# Check if backend is listening on port 4007
+sudo netstat -tulpn | grep 4007
+# or
+sudo ss -tulpn | grep 4007
+
+# Check if frontend is listening on port 3007
+sudo netstat -tulpn | grep 3007
+# or
+sudo ss -tulpn | grep 3007
+```
+
+**Expected output:** Should show `LISTEN` on the respective ports
+
+**If ports are not listening:**
+- Services may have crashed → Check logs above
+- Wrong port in configuration → See Step 3
+
+#### Step 3: Verify Backend .env Port Configuration
+
+```bash
+cat /root/projects/iso_document/backend/.env | grep PORT
+```
+
+**Should show:** `PORT=4007`
+
+**If wrong:**
+```bash
+cd /root/projects/iso_document/backend
+nano .env
+# Update PORT=4007
+# Save and exit (Ctrl+X, Y, Enter)
+pm2 restart iso-backend
+```
+
+#### Step 4: Verify PM2 Ecosystem Config
+
+```bash
+cat /root/projects/iso_document/ecosystem.config.js
+```
+
+**Verify:**
+- Backend `PORT: 4007` (line ~308 or ~461)
+- Frontend `PORT: 3007` (line ~479)
+- Correct `cwd` paths
+
+**If wrong, update and restart:**
+```bash
+cd /root/projects/iso_document
+nano ecosystem.config.js
+# Fix ports, save, then:
+pm2 delete all
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+#### Step 5: Check Nginx Configuration Matches
+
+```bash
+sudo cat /etc/nginx/sites-available/iso.taskinsight.my | grep -A 2 "upstream\|proxy_pass"
+```
+
+**Verify:**
+- `upstream iso_backend { server localhost:4007; }`
+- `proxy_pass http://iso_backend;` (for /api location)
+- `proxy_pass http://localhost:3007;` (for / location)
+
+**If wrong, update:**
+```bash
+sudo nano /etc/nginx/sites-available/iso.taskinsight.my
+# Fix upstream and proxy_pass, save, then:
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+#### Step 6: Check Nginx Error Logs
+
+```bash
+sudo tail -f /var/log/nginx/error.log
+```
+
+**Look for:**
+- `connect() failed (111: Connection refused)` → Backend not running
+- `connect() failed (111: No route to host)` → Wrong port/address
+- `upstream prematurely closed connection` → Backend crashed
+
+#### Step 7: Test Backend Directly
+
+```bash
+# Test if backend responds directly (should work if backend is running)
+curl http://localhost:4007/api
+# or
+curl http://localhost:4007/api/docs
+
+# Test if frontend responds directly
+curl http://localhost:3007
+```
+
+**If direct connection works but Nginx 502 persists:**
+- Nginx config issue → Check Step 5
+- Firewall blocking → Check Step 8
+
+#### Step 8: Check Firewall/SELinux
+
+```bash
+# Check if firewall is blocking
+sudo ufw status
+# If active, ensure ports 3007 and 4007 are allowed locally (127.0.0.1 is always allowed)
+
+# Check if any process is blocking
+sudo lsof -i :4007
+sudo lsof -i :3007
+```
+
+#### Step 9: Verify Backend Built Successfully
+
+```bash
+ls -la /root/projects/iso_document/backend/dist/main.js
+```
+
+**If file doesn't exist:**
+```bash
+cd /root/projects/iso_document/backend
+npm run build
+pm2 restart iso-backend
+```
+
+#### Step 10: Complete Restart Sequence
+
+If nothing above works, try a complete restart:
+
+```bash
+# Stop everything
+pm2 stop all
+
+# Restart services
+pm2 start all
+
+# If still failing, delete and recreate
+pm2 delete all
+cd /root/projects/iso_document
+pm2 start ecosystem.config.js
+pm2 save
+
+# Reload Nginx
+sudo systemctl reload nginx
+
+# Check status
+pm2 status
+pm2 logs --lines 20
+```
+
+---
+
 ### Backend Not Starting
 
 ```bash
@@ -691,18 +876,149 @@ sudo netstat -tulpn | grep 4007
 cat backend/.env
 ```
 
-### Frontend Not Loading
+### Frontend Not Loading / Frontend Errored in PM2
+
+#### Step 1: Check Frontend Error Logs
 
 ```bash
-# Check logs
-pm2 logs iso-frontend
-
-# Check if port 3007 is in use
-sudo netstat -tulpn | grep 3007
-
-# Verify build
-ls -la frontend/.next
+# Check detailed error logs
+pm2 logs iso-frontend --lines 100
+pm2 logs iso-frontend --err --lines 50
 ```
+
+**Common errors to look for:**
+- `Module not found` → Missing dependencies
+- `Cannot find module` → Build artifacts missing
+- `Port already in use` → Port 3007 is taken
+- `EADDRINUSE` → Port conflict
+- `.next folder missing` → Frontend not built
+
+#### Step 2: Verify Frontend Build
+
+```bash
+# Check if .next folder exists
+ls -la /root/projects/iso_document/frontend/.next
+
+# Check if .next folder has content
+ls -la /root/projects/iso_document/frontend/.next/server
+```
+
+**If .next folder is missing or empty:**
+```bash
+cd /root/projects/iso_document/frontend
+npm run build
+```
+
+#### Step 3: Check Port 3007 Availability
+
+```bash
+# Check if port 3007 is already in use
+sudo netstat -tulpn | grep 3007
+sudo lsof -i :3007
+
+# If port is in use by another process, kill it or change port
+```
+
+#### Step 4: Verify Frontend .env File
+
+```bash
+cat /root/projects/iso_document/frontend/.env
+```
+
+**Should show:**
+```env
+NEXT_PUBLIC_API_URL=https://iso.taskinsight.my/api
+```
+
+**If missing or wrong:**
+```bash
+cd /root/projects/iso_document/frontend
+nano .env
+# Add: NEXT_PUBLIC_API_URL=https://iso.taskinsight.my/api
+# Save: Ctrl+X, Y, Enter
+```
+
+#### Step 5: Reinstall Dependencies (if build fails)
+
+```bash
+cd /root/projects/iso_document/frontend
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
+
+#### Step 6: Check PM2 Ecosystem Config
+
+```bash
+cat /root/projects/iso_document/ecosystem.config.js
+```
+
+**Verify frontend config:**
+- `cwd: '/root/projects/iso_document/frontend'`
+- `PORT: 3007`
+- `script: 'npm'`
+- `args: 'start'`
+
+#### Step 7: Test Frontend Manually
+
+```bash
+cd /root/projects/iso_document/frontend
+npm start
+```
+
+**If manual start works but PM2 fails:**
+- PM2 config issue → Fix ecosystem.config.js
+- Working directory issue → Check cwd path
+
+**If manual start also fails:**
+- Check error message in terminal
+- Fix the specific error (usually build or dependency issue)
+
+#### Step 8: Restart Frontend in PM2
+
+```bash
+# Stop and delete frontend
+pm2 delete iso-frontend
+
+# Start again
+cd /root/projects/iso_document
+pm2 start ecosystem.config.js --only iso-frontend
+
+# Check status
+pm2 status
+pm2 logs iso-frontend --lines 20
+```
+
+#### Step 9: Complete Frontend Reset
+
+If still errored, do a complete reset:
+
+```bash
+cd /root/projects/iso_document/frontend
+
+# Clean build artifacts
+rm -rf .next node_modules
+
+# Reinstall
+npm install
+
+# Rebuild
+npm run build
+
+# Restart in PM2
+cd ..
+pm2 delete iso-frontend
+pm2 start ecosystem.config.js --only iso-frontend
+pm2 save
+```
+
+#### Step 10: Check Next.js Configuration
+
+```bash
+cat /root/projects/iso_document/frontend/next.config.js
+```
+
+**Verify it exists and has correct configuration.**
 
 ### Database Connection Error
 
