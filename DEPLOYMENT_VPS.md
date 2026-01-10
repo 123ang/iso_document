@@ -679,7 +679,288 @@ pm2 restart all
 
 ## 🐛 Troubleshooting
 
-### 502 Bad Gateway Error
+### 502 Bad Gateway Error - Complete Debugging Guide
+
+**502 Bad Gateway** means Nginx cannot connect to your backend or frontend services. Follow these steps in order:
+
+#### 🔍 Step-by-Step Debugging Checklist
+
+**1. Check PM2 Status**
+
+```bash
+pm2 status
+```
+
+**Expected:** Both services should show `online` status
+- ✅ `iso-backend` - status: `online`
+- ✅ `iso-frontend` - status: `online`
+
+**If not online:**
+```bash
+# Check logs
+pm2 logs iso-backend --lines 50
+pm2 logs iso-frontend --lines 50
+
+# Restart services
+pm2 restart all
+```
+
+---
+
+**2. Verify Ports are Listening**
+
+```bash
+# Check backend port 4007
+sudo netstat -tulpn | grep 4007
+# OR
+sudo ss -tulpn | grep 4007
+
+# Check frontend port 3007
+sudo netstat -tulpn | grep 3007
+# OR
+sudo ss -tulpn | grep 3007
+```
+
+**Expected output:**
+```
+tcp  0  0  0.0.0.0:4007  0.0.0.0:*  LISTEN  <PID>/node
+tcp  0  0  0.0.0.0:3007  0.0.0.0:*  LISTEN  <PID>/node
+```
+
+**If ports are NOT listening:**
+- Service crashed → Check logs (Step 3)
+- Wrong port config → Check Step 5
+
+---
+
+**3. Test Direct Connection (Bypass Nginx)**
+
+```bash
+# Test backend directly
+curl http://localhost:4007/api
+curl http://localhost:4007/api/docs
+
+# Test frontend directly
+curl http://localhost:3007
+
+# Check response - should get HTML or JSON, not connection refused
+```
+
+**If direct connection FAILS:**
+- Services not running → Fix service (Step 1)
+- Wrong port → Check configuration (Step 5)
+
+**If direct connection WORKS but Nginx still 502:**
+- Nginx configuration issue → Check Step 4
+
+---
+
+**4. Check Nginx Error Logs**
+
+```bash
+# View recent Nginx errors
+sudo tail -50 /var/log/nginx/error.log
+
+# Follow errors in real-time
+sudo tail -f /var/log/nginx/error.log
+```
+
+**Common Nginx errors:**
+- `connect() failed (111: Connection refused)` → Service not running
+- `connect() to 127.0.0.1:4007 failed` → Wrong port in Nginx config
+- `upstream iso_backend` not found → Upstream name mismatch
+- `upstream prematurely closed connection` → Service crashed
+
+**Fix based on error:**
+- Connection refused → Start services (Step 1)
+- Wrong port → Fix Nginx config (Step 6)
+- Upstream not found → Fix upstream name (Step 6)
+
+---
+
+**5. Verify Configuration Files**
+
+```bash
+# Check backend .env
+cat /root/projects/iso_document/backend/.env | grep PORT
+# Should show: PORT=4007
+
+# Check PM2 ecosystem config
+cat /root/projects/iso_document/ecosystem.config.js | grep -A 1 "PORT"
+# Should show: PORT: 4007 and PORT: 3007
+
+# Check Nginx config
+sudo cat /etc/nginx/sites-available/iso.taskinsight.my | grep -A 2 "upstream\|proxy_pass\|localhost"
+```
+
+**Verify:**
+- Backend `.env`: `PORT=4007` ✅
+- PM2 backend: `PORT: 4007` ✅
+- PM2 frontend: `PORT: 3007` ✅
+- Nginx upstream: `server localhost:4007;` ✅
+- Nginx frontend proxy: `proxy_pass http://localhost:3007;` ✅
+- Nginx backend proxy: `proxy_pass http://iso_backend;` ✅
+
+**If configurations don't match:**
+- Update the mismatched config
+- Restart affected service
+- Reload Nginx
+
+---
+
+**6. Verify Nginx Configuration**
+
+```bash
+# Test Nginx configuration syntax
+sudo nginx -t
+
+# View actual Nginx config being used
+sudo cat /etc/nginx/sites-enabled/iso.taskinsight.my
+```
+
+**Check for:**
+- ✅ `upstream iso_backend { server localhost:4007; }`
+- ✅ `proxy_pass http://iso_backend;` (for `/api` location)
+- ✅ `proxy_pass http://localhost:3007;` (for `/` location)
+- ✅ No duplicate upstream names
+- ✅ Correct server_name
+
+**If config is wrong:**
+```bash
+sudo nano /etc/nginx/sites-available/iso.taskinsight.my
+# Fix configuration
+sudo nginx -t  # Test syntax
+sudo systemctl reload nginx  # Reload if test passes
+```
+
+---
+
+**7. Check Service Logs for Errors**
+
+```bash
+# Backend logs
+pm2 logs iso-backend --err --lines 50
+pm2 logs iso-backend --lines 100
+
+# Frontend logs
+pm2 logs iso-frontend --err --lines 50
+pm2 logs iso-frontend --lines 100
+
+# System logs
+sudo journalctl -u nginx -n 50
+sudo journalctl -xe | tail -50
+```
+
+**Look for:**
+- Database connection errors
+- Port already in use errors
+- Module not found errors
+- Build errors
+- Configuration errors
+
+---
+
+**8. Verify Services are Built**
+
+```bash
+# Check backend build
+ls -la /root/projects/iso_document/backend/dist/main.js
+# Should exist
+
+# Check frontend build
+ls -la /root/projects/iso_document/frontend/.next
+# Should exist and have content
+
+# If missing, rebuild:
+cd /root/projects/iso_document/backend && npm run build
+cd /root/projects/iso_document/frontend && npm run build
+```
+
+---
+
+**9. Complete Service Restart**
+
+```bash
+# Stop all
+pm2 stop all
+pm2 delete all
+
+# Verify ports are free
+sudo lsof -i :4007
+sudo lsof -i :3007
+# Kill any processes using these ports if needed:
+# sudo kill -9 <PID>
+
+# Start services
+cd /root/projects/iso_document
+pm2 start ecosystem.config.js
+pm2 save
+
+# Wait 5 seconds, then check
+sleep 5
+pm2 status
+
+# Check ports are listening
+sudo netstat -tulpn | grep -E "4007|3007"
+```
+
+---
+
+**10. Test Each Service Individually**
+
+```bash
+# Test backend
+cd /root/projects/iso_document/backend
+node dist/main.js
+# Should start without errors (Ctrl+C to stop)
+
+# Test frontend
+cd /root/projects/iso_document/frontend
+npm start
+# Should start without errors (Ctrl+C to stop)
+```
+
+**If manual start fails:**
+- Fix the specific error shown
+- Usually database connection or missing dependencies
+
+---
+
+**11. Quick Verification Commands**
+
+Run all these at once to get full status:
+
+```bash
+echo "=== PM2 Status ===" && \
+pm2 status && \
+echo -e "\n=== Ports Listening ===" && \
+sudo netstat -tulpn | grep -E "4007|3007" && \
+echo -e "\n=== Direct Connection Test ===" && \
+echo "Backend:" && curl -s -o /dev/null -w "%{http_code}" http://localhost:4007/api && \
+echo -e "\nFrontend:" && curl -s -o /dev/null -w "%{http_code}" http://localhost:3007 && \
+echo -e "\n=== Nginx Config Test ===" && \
+sudo nginx -t && \
+echo -e "\n=== Recent Nginx Errors ===" && \
+sudo tail -5 /var/log/nginx/error.log
+```
+
+---
+
+**12. Common Issues and Fixes**
+
+| Issue | Symptom | Fix |
+|-------|---------|-----|
+| Service not running | `pm2 status` shows errored/stopped | `pm2 restart all` or check logs |
+| Wrong port in package.json | Frontend trying to use 3001 | Update `frontend/package.json` start script |
+| Wrong port in .env | Backend on wrong port | Update `backend/.env` PORT=4007 |
+| Nginx upstream mismatch | Nginx can't find upstream | Check upstream name matches proxy_pass |
+| Service crashed | Port not listening | Check logs, fix error, restart |
+| Build missing | Service won't start | Run `npm run build` |
+| Port conflict | Port already in use | Kill conflicting process or change port |
+
+---
+
+### 502 Bad Gateway Error (Original Detailed Section)
 
 This error means Nginx cannot connect to your backend/frontend services. Follow these steps:
 
