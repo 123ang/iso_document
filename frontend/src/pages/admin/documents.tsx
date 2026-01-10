@@ -199,6 +199,27 @@ export default function DocumentsAdminPage() {
     }
   };
 
+  const handleView = async (versionId: number) => {
+    try {
+      const url = await versionsAPI.getViewUrl(versionId);
+      window.open(url, '_blank');
+    } catch (error: any) {
+      console.error('View error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to load document preview';
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+    }
+  };
+
+  const handleDownload = async (versionId: number) => {
+    try {
+      await versionsAPI.download(versionId);
+    } catch (error: any) {
+      console.error('Download error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to download document';
+      setSnackbar({ open: true, message: errorMessage, severity: 'error' });
+    }
+  };
+
   if (!isAuthenticated || user?.role !== 'admin') {
     return null;
   }
@@ -289,14 +310,14 @@ export default function DocumentsAdminPage() {
                               <IconButton
                                 size="small"
                                 color="info"
-                                onClick={() => window.open(versionsAPI.getViewUrl(doc.currentVersion.id), '_blank')}
+                                onClick={() => handleView(doc.currentVersion.id)}
                                 title={t('documents.view')}
                               >
                                 <ViewIcon />
                               </IconButton>
                               <IconButton
                                 size="small"
-                                onClick={() => versionsAPI.download(doc.currentVersion.id)}
+                                onClick={() => handleDownload(doc.currentVersion.id)}
                                 title={t('documents.download')}
                               >
                                 <DownloadIcon />
