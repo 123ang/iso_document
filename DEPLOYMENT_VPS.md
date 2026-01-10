@@ -201,7 +201,7 @@ nano .env
 ```env
 # Application Configuration
 NODE_ENV=production
-PORT=3000
+PORT=4007
 API_PREFIX=api
 
 # Database Configuration
@@ -305,7 +305,7 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 4007,
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
@@ -351,7 +351,7 @@ sudo nano /etc/nginx/sites-available/iso.taskinsight.my
 ```nginx
 # Backend API - Proxy to Node.js
 upstream backend {
-    server localhost:3000;
+    server localhost:4007;
     keepalive 64;
 }
 
@@ -362,7 +362,7 @@ server {
 
     # Frontend
     location / {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:3007;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -457,7 +457,7 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 3000,
+        PORT: 4007,
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
@@ -476,7 +476,7 @@ module.exports = {
       exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
-        PORT: 3001,
+        PORT: 3007,
       },
       error_file: './logs/frontend-error.log',
       out_file: './logs/frontend-out.log',
@@ -684,8 +684,8 @@ pm2 restart all
 # Check logs
 pm2 logs iso-backend
 
-# Check if port 3000 is in use
-sudo netstat -tulpn | grep 3000
+# Check if port 4007 is in use
+sudo netstat -tulpn | grep 4007
 
 # Check .env file
 cat backend/.env
@@ -697,8 +697,8 @@ cat backend/.env
 # Check logs
 pm2 logs iso-frontend
 
-# Check if port 3001 is in use
-sudo netstat -tulpn | grep 3001
+# Check if port 3007 is in use
+sudo netstat -tulpn | grep 3007
 
 # Verify build
 ls -la frontend/.next
