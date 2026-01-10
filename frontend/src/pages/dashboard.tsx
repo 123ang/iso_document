@@ -179,7 +179,7 @@ export default function DashboardPage() {
                         >
                           <CardContent>
                             <Box display="flex" alignItems="center" mb={1}>
-                              <FolderIcon sx={{ color: uumColors.gold, mr: 1 }} />
+                              <FolderIcon sx={{ color: uumColors.yellow, mr: 1 }} />
                               <Typography variant="h6" fontWeight="bold">
                                 {set.title}
                               </Typography>

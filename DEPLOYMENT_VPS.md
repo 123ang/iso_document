@@ -679,6 +679,156 @@ pm2 restart all
 
 ## 🐛 Troubleshooting
 
+### 502 Bad Gateway Error - Quick Fix Guide
+
+**If you see 502 Bad Gateway on https://iso.taskinsight.my**, run this diagnostic script immediately:
+
+```bash
+echo "=== QUICK 502 DIAGNOSTIC ===" && \
+echo "1. PM2 Status:" && pm2 status && \
+echo -e "\n2. Ports Listening:" && \
+sudo netstat -tulpn | grep -E "4007|3007" || echo "❌ NO PORTS LISTENING!" && \
+echo -e "\n3. Backend Direct Test:" && \
+curl -s -o /dev/null -w "HTTP %{http_code}" http://localhost:4007/api 2>&1 || echo "❌ Backend NOT responding" && \
+echo -e "\n4. Frontend Direct Test:" && \
+curl -s -o /dev/null -w "HTTP %{http_code}" http://localhost:3007 2>&1 || echo "❌ Frontend NOT responding" && \
+echo -e "\n5. Recent Errors:" && \
+sudo tail -5 /var/log/nginx/error.log 2>/dev/null || echo "No Nginx errors" && \
+echo -e "\n6. PM2 Recent Logs:" && \
+pm2 logs --lines 3 --nostream 2>&1 | tail -10
+```
+
+**Common Causes & Quick Fixes:**
+
+#### Issue 1: Backend Database Connection Failed (Most Common)
+**Symptoms:** Backend shows errored or crashed in PM2
+**Fix:**
+```bash
+# Check backend .env file
+cat /root/projects/iso_document/backend/.env | grep DB_
+
+# Must have:
+# DB_USERNAME=iso_user
+# DB_PASSWORD=5792_Ang (or your actual password)
+# DB_DATABASE=iso_document_system
+
+# If missing/wrong, fix it:
+cd /root/projects/iso_document/backend
+nano .env
+# Add/fix database credentials
+# Save: Ctrl+X, Y, Enter
+
+# Restart backend
+pm2 restart iso-backend
+pm2 logs iso-backend --lines 20
+```
+
+#### Issue 2: Frontend Port Wrong
+**Symptoms:** Frontend errored, logs show port 3000/3001 conflict
+**Fix:**
+```bash
+# Update frontend package.json
+cd /root/projects/iso_document/frontend
+nano package.json
+# Change: "start": "next start -p ${PORT:-3007}"
+# Save: Ctrl+X, Y, Enter
+
+# Kill anything on port 3000/3001
+sudo fuser -k 3000/tcp 2>/dev/null
+sudo fuser -k 3001/tcp 2>/dev/null
+
+# Restart frontend
+pm2 restart iso-frontend
+```
+
+#### Issue 3: Services Not Running
+**Fix:**
+```bash
+# Restart all services
+pm2 restart all
+pm2 save
+
+# If still not working, complete reset:
+pm2 delete all
+cd /root/projects/iso_document
+pm2 start ecosystem.config.js
+pm2 save
+pm2 status
+```
+
+#### Issue 4: Nginx Config Wrong
+**Fix:**
+```bash
+# Test Nginx config
+sudo nginx -t
+
+# Verify config has correct ports:
+sudo grep -E "localhost:4007|localhost:3007|upstream iso_backend" /etc/nginx/sites-available/iso.taskinsight.my
+
+# Should show:
+# upstream iso_backend { server localhost:4007; }
+# proxy_pass http://iso_backend;
+# proxy_pass http://localhost:3007;
+
+# If wrong, fix:
+sudo nano /etc/nginx/sites-available/iso.taskinsight.my
+# Fix config, save, then:
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+#### Issue 5: Frontend Not Built (Production Build Missing)
+**Symptoms:** Error: `Could not find a production build in the '.next' directory`
+**Fix:**
+```bash
+# Navigate to frontend directory
+cd /root/projects/iso_document/frontend
+
+# Check if .next directory exists
+ls -la .next 2>/dev/null || echo "❌ .next directory missing - needs build"
+
+# Build the frontend
+npm run build
+
+# This may take 2-5 minutes. Watch for:
+# ✓ Compiled successfully
+# ✓ Generating static pages
+# ✓ Finalizing page optimization
+
+# After build completes, verify:
+ls -la .next
+# Should show: BUILD_ID, server/, static/, etc.
+
+# Restart frontend in PM2
+pm2 restart iso-frontend
+
+# Check logs to verify it started correctly
+pm2 logs iso-frontend --lines 20
+```
+
+**If build fails:**
+```bash
+# Clean and rebuild
+cd /root/projects/iso_document/frontend
+rm -rf .next node_modules package-lock.json
+npm install
+npm run build
+
+# Then restart
+pm2 restart iso-frontend
+```
+
+**Backend Build Check:**
+```bash
+# Check if backend is built
+ls -la /root/projects/iso_document/backend/dist/main.js
+# If missing:
+cd /root/projects/iso_document/backend
+npm run build
+```
+
+---
+
 ### 502 Bad Gateway Error - Complete Debugging Guide
 
 **502 Bad Gateway** means Nginx cannot connect to your backend or frontend services. Follow these steps in order:
